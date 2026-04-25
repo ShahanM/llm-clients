@@ -1,7 +1,7 @@
 [project]
 name = "llm-clients"
 version = "0.1.0"
-description = "Add your description here"
+description = "Utility library to run local LLMs"
 readme = "README.md"
 authors = [
     { name = 'Mehtab "Shahan" Iqbal', email = "mehtabi@clemson.edu" }
