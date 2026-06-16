@@ -2,9 +2,9 @@ from .client import CausalLMClient
 
 
 class DeepSeekReasoningClient(CausalLMClient):
-    def _parse_responses(self, raw_responses: list[str]) -> list[str]:
+    def _parse_responses(self, responses: list[str]) -> list[str]:
         final_outputs = []
-        for raw_response in raw_responses:
+        for raw_response in responses:
             raw_response = raw_response.replace("Ġ", " ").replace("Ċ", "\n")
 
             if "</think>" in raw_response:
