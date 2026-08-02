@@ -2,10 +2,12 @@ from .client import CausalLMClient, get_optimal_dtype
 
 
 class GemmaClient(CausalLMClient):
-    def __init__(self, model_name: str, client_tag: str):
+    def __init__(self, model_name: str, client_tag: str, model_type: str = "N/A"):
         optimal_dtype = get_optimal_dtype(is_gemma=True)
         # Override the default FP16 to use FP32, preventing Gemma's NaN overflow on V100s
-        super().__init__(model_name, client_tag, compute_dtype=optimal_dtype)
+        super().__init__(
+            model_name, client_tag, model_type, compute_dtype=optimal_dtype
+        )
 
     def _get_terminators(self) -> list[int]:
         """Gemma requires an explicit <end_of_turn> token to stop generation."""

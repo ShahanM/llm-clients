@@ -60,27 +60,43 @@ def get_llm_client(model_type: str) -> LLMClient | None:
     if model_type in ["gpt5nano", "gpt5mini"]:
         from llm_clients.openai_gpt import ChatGPT
 
-        llm_client = ChatGPT(model_name=model_info["model_id"], client_tag="ChatGPT")
+        llm_client = ChatGPT(
+            model_name=model_info["model_id"],
+            client_tag="ChatGPT",
+            model_type=model_info["type"],
+        )
     elif model_type == "llama3":
         from llm_clients.llama3 import Llama3Client
 
         llm_client = Llama3Client(
-            model_name=model_info["model_id"], client_tag="Llama3"
+            model_name=model_info["model_id"],
+            client_tag="Llama3",
+            model_type=model_info["type"],
         )
     elif model_type == "phi4" or model_type == "qwen3":
         from llm_clients.chat_ml import ChatMLClient
 
-        llm_client = ChatMLClient(model_info["model_id"], model_info["model_tag"])
+        llm_client = ChatMLClient(
+            model_info["model_id"],
+            model_info["model_tag"],
+            model_type=model_info["type"],
+        )
     elif model_type.startswith("deepseek"):
         from llm_clients.deepseek import DeepSeekReasoningClient
 
         llm_client = DeepSeekReasoningClient(
-            model_info["model_id"], model_info["model_tag"]
+            model_info["model_id"],
+            model_info["model_tag"],
+            model_type=model_info["type"],
         )
     elif model_type == "gemma":
         from llm_clients.gemma import GemmaClient
 
-        llm_client = GemmaClient(model_info["model_id"], model_info["model_tag"])
+        llm_client = GemmaClient(
+            model_info["model_id"],
+            model_info["model_tag"],
+            model_type=model_info["type"],
+        )
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 

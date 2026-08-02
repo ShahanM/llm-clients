@@ -17,17 +17,19 @@ from .client import LLMClient
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('openai_client')
+logger = logging.getLogger("openai_client")
 
 
 # MODEL_NAME = "gpt-5-nano-2025-08-07"
 class ChatGPT(LLMClient):
-    def __init__(self, model_name: str, client_tag: str):
-        super().__init__(model_name, client_tag)
-        api_key = os.environ.get('API_KEY')
-        project_key = os.environ.get('PROJECT_KEY')
-        org_key = os.environ.get('ORG_KEY')
-        self.client = AsyncOpenAI(organization=org_key, project=project_key, api_key=api_key)
+    def __init__(self, model_name: str, client_tag: str, model_type: str = "N/A"):
+        super().__init__(model_name, client_tag, model_type)
+        api_key = os.environ.get("API_KEY")
+        project_key = os.environ.get("PROJECT_KEY")
+        org_key = os.environ.get("ORG_KEY")
+        self.client = AsyncOpenAI(
+            organization=org_key, project=project_key, api_key=api_key
+        )
 
     def parse_reset_header(self, header_value: str) -> float:
         """Parses OpenAI's 'x-ratelimit-reset-*' headers.
@@ -37,14 +39,14 @@ class ChatGPT(LLMClient):
         if not header_value:
             return 1.0
 
-        match = re.match(r'(\d+(?:\.\d+)?)(ms|s|m|h|d)', header_value)
+        match = re.match(r"(\d+(?:\.\d+)?)(ms|s|m|h|d)", header_value)
         if not match:
             return 1.0
 
         value, unit = match.groups()
         value = float(value)
 
-        multipliers = {'ms': 0.001, 's': 1.0, 'm': 60.0, 'h': 3600.0, 'd': 86400.0}
+        multipliers = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0, "d": 86400.0}
         return value * multipliers.get(unit, 1.0)
 
     async def generate(
@@ -65,15 +67,23 @@ class ChatGPT(LLMClient):
         instructions = [instruction] if is_single else cast(list[str], instruction)
         input_texts = [input_text] if is_single else cast(list[str], input_text)
 
-        assert len(instructions) == len(input_texts), 'Instructions and inputs must match in length.'
+        assert len(instructions) == len(input_texts), (
+            "Instructions and inputs must match in length."
+        )
 
         async def _single_call(inst: str, inp: str) -> str:
             retry_count = 0
             while retry_count < max_retries:
                 try:
                     messages: list[ChatCompletionMessageParam] = []
-                    messages.append(ChatCompletionSystemMessageParam({'role': 'system', 'content': inst}))
-                    messages.append(ChatCompletionUserMessageParam({'role': 'user', 'content': inp}))
+                    messages.append(
+                        ChatCompletionSystemMessageParam(
+                            {"role": "system", "content": inst}
+                        )
+                    )
+                    messages.append(
+                        ChatCompletionUserMessageParam({"role": "user", "content": inp})
+                    )
 
                     response = await self.client.chat.completions.create(
                         model=self.model_name,
@@ -83,20 +93,34 @@ class ChatGPT(LLMClient):
 
                     content = response.choices[0].message.content
                     if content is None:
-                        logger.error(f'SILENT API FAILURE! Finish reason: {response.choices[0].finish_reason}')
-                        raise ValueError(f"API returned empty content. Reason: {response.choices[0].finish_reason}")
+                        logger.error(
+                            f"SILENT API FAILURE! Finish reason: {response.choices[0].finish_reason}"
+                        )
+                        raise ValueError(
+                            f"API returned empty content. Reason: {response.choices[0].finish_reason}"
+                        )
                     return content
 
                 except RateLimitError as e:
                     retry_count += 1
-                    retry_after = e.response.headers.get('retry-after')
+                    retry_after = e.response.headers.get("retry-after")
 
                     if not retry_after:
-                        reset_requests = e.response.headers.get('x-ratelimit-reset-requests')
-                        reset_tokens = e.response.headers.get('x-ratelimit-reset-tokens')
+                        reset_requests = e.response.headers.get(
+                            "x-ratelimit-reset-requests"
+                        )
+                        reset_tokens = e.response.headers.get(
+                            "x-ratelimit-reset-tokens"
+                        )
 
-                        delay_req = self.parse_reset_header(reset_requests) if reset_requests else 0
-                        delay_tok = self.parse_reset_header(reset_tokens) if reset_tokens else 0
+                        delay_req = (
+                            self.parse_reset_header(reset_requests)
+                            if reset_requests
+                            else 0
+                        )
+                        delay_tok = (
+                            self.parse_reset_header(reset_tokens) if reset_tokens else 0
+                        )
                         sleep_time = max(delay_req, delay_tok)
 
                         if sleep_time == 0:
@@ -105,52 +129,57 @@ class ChatGPT(LLMClient):
                         sleep_time = float(retry_after)
 
                     logger.warning(
-                        f'Rate limit hit. Retrying in {sleep_time:.2f}s (Attempt {retry_count}/{max_retries})'
+                        f"Rate limit hit. Retrying in {sleep_time:.2f}s (Attempt {retry_count}/{max_retries})"
                     )
                     await asyncio.sleep(sleep_time)
 
                 except (APIConnectionError, APIError) as e:
                     retry_count += 1
                     sleep_time = initial_backoff * (2 ** (retry_count - 1))
-                    logger.error(f'API Error: {e}. Retrying in {sleep_time}s...')
+                    logger.error(f"API Error: {e}. Retrying in {sleep_time}s...")
                     await asyncio.sleep(sleep_time)
 
                 except Exception as e:
-                    logger.critical(f'Fatal error: {e}')
+                    logger.critical(f"Fatal error: {e}")
                     raise e
 
-            logger.error('Max retries exceeded.')
-            return ''
+            logger.error("Max retries exceeded.")
+            return ""
 
-        tasks = [_single_call(inst, inp) for inst, inp in zip(instructions, input_texts, strict=False)]  # type: ignore
+        tasks = [
+            _single_call(inst, inp)
+            for inst, inp in zip(instructions, input_texts, strict=False)
+        ]  # type: ignore
         results = await asyncio.gather(*tasks)
 
         return results[0] if is_single else list(results)
 
-    async def submit_batch(self, jsonl_path: str, description: str = 'Batch generation') -> str:
+    async def submit_batch(
+        self, jsonl_path: str, description: str = "Batch generation"
+    ) -> str:
         """Uploads a JSONL file and submits it to the OpenAI Batch API.
 
         Returns the Batch ID.
         """
         if not os.path.exists(jsonl_path):
-            raise FileNotFoundError(f'Batch file not found: {jsonl_path}')
+            raise FileNotFoundError(f"Batch file not found: {jsonl_path}")
 
-        logger.info(f'Uploading batch file: {jsonl_path}')
-        with open(jsonl_path, 'rb') as f:
-            batch_input_file = await self.client.files.create(file=f, purpose='batch')
+        logger.info(f"Uploading batch file: {jsonl_path}")
+        with open(jsonl_path, "rb") as f:
+            batch_input_file = await self.client.files.create(file=f, purpose="batch")
 
         file_id = batch_input_file.id
-        logger.info(f'File uploaded successfully. ID: {file_id}')
+        logger.info(f"File uploaded successfully. ID: {file_id}")
 
-        logger.info('Submitting batch job...')
+        logger.info("Submitting batch job...")
         batch_job = await self.client.batches.create(
             input_file_id=file_id,
-            endpoint='/v1/chat/completions',
-            completion_window='24h',
-            metadata={'description': description},
+            endpoint="/v1/chat/completions",
+            completion_window="24h",
+            metadata={"description": description},
         )
 
-        logger.info(f'Batch job submitted successfully! Batch ID: {batch_job.id}')
+        logger.info(f"Batch job submitted successfully! Batch ID: {batch_job.id}")
         return batch_job.id
 
     async def get_batch_status(self, batch_id: str) -> dict:
@@ -161,34 +190,38 @@ class ChatGPT(LLMClient):
         batch_job = await self.client.batches.retrieve(batch_id)
 
         status_info = {
-            'id': batch_job.id,
-            'status': batch_job.status,  # e.g., 'validating', 'in_progress', 'completed', 'failed'
-            'output_file_id': batch_job.output_file_id,
-            'error_file_id': batch_job.error_file_id,
+            "id": batch_job.id,
+            "status": batch_job.status,  # e.g., 'validating', 'in_progress', 'completed', 'failed'
+            "output_file_id": batch_job.output_file_id,
+            "error_file_id": batch_job.error_file_id,
         }
         return status_info
 
     async def download_batch_results(self, output_file_id: str, save_path: str) -> None:
         """Downloads the completed batch results and saves them to the specified path."""
         if not output_file_id:
-            raise ValueError('No output_file_id provided. The batch may not be completed yet.')
+            raise ValueError(
+                "No output_file_id provided. The batch may not be completed yet."
+            )
 
-        logger.info(f'Downloading results for output file ID: {output_file_id}')
+        logger.info(f"Downloading results for output file ID: {output_file_id}")
         file_response = await self.client.files.content(output_file_id)
         content = file_response.read()
 
-        with open(save_path, 'wb') as f:
+        with open(save_path, "wb") as f:
             f.write(content)
 
-        logger.info(f'Batch results successfully saved to {save_path}')
+        logger.info(f"Batch results successfully saved to {save_path}")
 
-    async def get_embeddings(self, texts: list[str], model: str = 'text-embedding-3-small') -> list[list[float]]:
+    async def get_embeddings(
+        self, texts: list[str], model: str = "text-embedding-3-small"
+    ) -> list[list[float]]:
         """Retrieves embeddings for a list of texts using the OpenAI Embeddings API."""
         try:
             response = await self.client.embeddings.create(input=texts, model=model)
             return [data.embedding for data in response.data]
         except Exception as e:
-            logger.error(f'Embedding failed: {e}')
+            logger.error(f"Embedding failed: {e}")
             raise e
 
 
@@ -229,5 +262,5 @@ async def main():
     #     print("Ready for embedding distance calculation!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
