@@ -29,7 +29,8 @@ class LLMClient(ABC):
         self, model_name: str, client_tag: str | None = None, model_type: str = "N/A"
     ):
         self.model_name = model_name
-        self.tag = model_type
+        self.tag = client_tag
+        self.type = model_type
         self.logger = structlog.get_logger(client_tag)
 
     @abstractmethod
