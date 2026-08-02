@@ -1,6 +1,6 @@
 [project]
 name = "llm-clients"
-version = "0.1.0"
+version = "0.1.1"
 description = "Utility library to run local LLMs"
 readme = "README.md"
 authors = [
@@ -19,7 +19,7 @@ local = [
     "accelerate>=1.13.0",
     "transformers>=5.5.4",
     "torch>=2.5.0",
-    "torchvision>=0.20.0",  
+    "torchvision>=0.20.0",
     "torchaudio>=2.5.0",
     "bitsandbytes>=0.42.0",
 ]
