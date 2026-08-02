@@ -4,42 +4,52 @@ MODEL_REGISTRY = {
     "gpt5nanobd": {
         "model_id": "gpt-5-nano-2025-08-07",
         "model_tag": "OpenAI/GPT-5-Nano",
+        "type": "proprietery",
     },
     "gpt5nano": {
         "model_id": "gpt-5-nano",
         "model_tag": "OpenAI/GPT-5-Nano",
+        "type": "proprietery",
     },
     "gpt5mini": {
         "model_id": "gpt-5-mini",
         "model_tag": "OpenAI/GPT-5-Mini",
+        "type": "proprietery",
     },
     "llama3": {
         "model_id": "meta-llama/Llama-3.1-8B-Instruct",
         "model_tag": "Meta/Llama-3",
+        "type": "instruct",
     },
     "phi4": {
         "model_id": "microsoft/phi-4",
         "model_tag": "Microsoft/Phi-4",
+        "type": "instruct",
     },
     "qwen3": {
         "model_id": "Qwen/Qwen3.5-27B",
         "model_tag": "Alibaba/Qwen-3.5",
+        "type": "instruct",
     },
     "deepseek_qwen_8b": {
         "model_id": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
         "model_tag": "DeepSeek-ai/DeepSeek-Qwen-8b",
+        "type": "reasoning",
     },
     "deepseek_qwen_32b": {
         "model_id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
         "model_tag": "DeepSeek-ai/DeepSeek-Qwen-32b",
+        "type": "reasoning",
     },
     "deepseek_llama": {
         "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
         "model_tag": "DeepSeek-ai/DeepSeek-Llama-8b",
+        "type": "reasoning",
     },
     "gemma": {
         "model_id": "google/gemma-3-27b-it",
         "model_tag": "Google/gemma-3",
+        "type": "instruct",
     },
 }
 
